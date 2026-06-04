@@ -52,7 +52,7 @@
     "@types/node": "^22",
     "tsup": "^8.3.0",
     "typescript": "^5.7",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.8"
   },
   "peerDependencies": {
     "openclaw": "^2026.4.23"
