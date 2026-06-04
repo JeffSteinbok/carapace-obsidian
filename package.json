@@ -21,11 +21,13 @@
   "scripts": {
     "build": "tsup && carapace-generate-cli --entry ./dist/plugin.js --out ./dist/bin",
     "prepare": "npm run build",
+    "start:indexer": "node dist/service/index.js",
     "test": "vitest run"
   },
   "files": [
     "dist",
     "openclaw.plugin.json",
+    "obsidian-indexer.service",
     "README.md",
     "LICENSE"
   ],
@@ -35,13 +37,18 @@
     "plugin",
     "obsidian",
     "notes",
-    "indexer"
+    "indexer",
+    "fts5"
   ],
   "dependencies": {
     "@sinclair/typebox": "^0.34.48",
-    "carapace-plugin-sdk": "^1.0.3"
+    "better-sqlite3": "^11.9.1",
+    "carapace-plugin-sdk": "^1.0.3",
+    "chokidar": "^4.0.3",
+    "gray-matter": "^4.0.3"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22",
     "tsup": "^8.3.0",
     "typescript": "^5.7",
