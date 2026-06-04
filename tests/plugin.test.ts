@@ -137,7 +137,7 @@ describe("plugin entry", () => {
     const plugin = createEntry();
     expect(plugin).toBeDefined();
     expect(plugin.name).toBe("Obsidian Vault");
-    expect(plugin.id).toBe("obsidian");
+    expect(plugin.id).toBe("obsidian-vault");
   });
 
   it("declares all expected tools in contracts", async () => {

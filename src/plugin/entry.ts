@@ -69,7 +69,7 @@ function getReader(config: { vaultRoot: string; indexLocation?: string }): Vault
 // ---------------------------------------------------------------------------
 
 export const createEntry = definePlugin({
-  id: "obsidian",
+  id: "obsidian-vault",
   name: "Obsidian Vault",
   description: "Read-only access to an Obsidian vault — search, read, and explore notes securely",
 
