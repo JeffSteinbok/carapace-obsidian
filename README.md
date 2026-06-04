@@ -4,7 +4,7 @@
 
 Read-only Obsidian vault integration for [OpenClaw](https://github.com/JeffSteinbok/openclaw) — full-text search, note reading, and graph exploration powered by SQLite FTS5.
 
-Built with [carapace-plugin-sdk](https://github.com/JeffSteinbok/carapace-plugin-sdk).
+Built with [carapace-plugin-sdk](https://github.com/JeffSteinbok/carapace-plugin-sdk). Pairs with [obsidian-onedrive](https://github.com/JeffSteinbok/obsidian-onedrive) for vault sync.
 
 ---
 
