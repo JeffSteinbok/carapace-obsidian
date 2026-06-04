@@ -7,6 +7,6 @@ export function createEntry() {
   return definePlugin({
     name: "obsidian",
     description: "Obsidian plugin and indexer service for OpenClaw",
-    tools: [],
+    tools: () => [],
   });
 }
