@@ -38,9 +38,56 @@ Built with [carapace-plugin-sdk](https://github.com/JeffSteinbok/carapace-plugin
 
 ## Installation
 
-### As an OpenClaw plugin
+### 1. Clone and build
 
-Add the repo path to your `openclaw.json` plugin directories:
+```bash
+git clone https://github.com/JeffSteinbok/carapace-obsidian.git
+cd carapace-obsidian
+npm install && npm run build
+```
+
+### 2. Vault sync (OneDrive)
+
+If your Obsidian vault lives on OneDrive, use [obsidian-onedrive](https://github.com/JeffSteinbok/obsidian-onedrive) to keep it synced to your server:
+
+```bash
+# Install and configure obsidian-onedrive to sync your vault to e.g. ~/OneDrive/MyVault
+# The indexer will watch this directory for changes
+```
+
+### 3. Indexer service (systemd)
+
+The indexer is a long-running service that watches your vault directory and maintains the FTS5 search index. It must be running for the plugin to return results.
+
+```bash
+# Copy the service file
+cp obsidian-indexer.service ~/.config/systemd/user/
+
+# Edit to match your paths:
+#   ExecStart=/usr/bin/node /path/to/carapace-obsidian/dist/service/index.js
+#   Environment=OBSIDIAN_VAULT_ROOT=/path/to/your/vault
+#   Environment=OBSIDIAN_INDEX_LOCATION=/home/you/.openclaw/obsidian-index.db
+nano ~/.config/systemd/user/obsidian-indexer.service
+
+# Enable and start
+systemctl --user daemon-reload
+systemctl --user enable --now obsidian-indexer
+
+# Verify it's running
+systemctl --user status obsidian-indexer
+journalctl --user -u obsidian-indexer -f
+```
+
+Environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `OBSIDIAN_VAULT_ROOT` | Absolute path to the Obsidian vault directory | *(required)* |
+| `OBSIDIAN_INDEX_LOCATION` | Path for the SQLite FTS5 database (must be outside the vault) | `~/.openclaw/obsidian-index.db` |
+
+### 4. Register in OpenClaw
+
+Add the plugin to your `openclaw.json`:
 
 ```json
 {
@@ -52,7 +99,7 @@ Add the repo path to your `openclaw.json` plugin directories:
       "obsidian-vault": {
         "enabled": true,
         "config": {
-          "vaultRoot": "/path/to/your/obsidian/vault",
+          "vaultRoot": "/path/to/your/vault",
           "indexLocation": "~/.openclaw/obsidian-index.db"
         }
       }
@@ -61,22 +108,13 @@ Add the repo path to your `openclaw.json` plugin directories:
 }
 ```
 
-### Indexer service (systemd)
+Then restart the gateway:
 
 ```bash
-# Copy and edit the service file
-cp obsidian-indexer.service ~/.config/systemd/user/
-# Edit ExecStart path and Environment vars to match your setup
-systemctl --user daemon-reload
-systemctl --user enable --now obsidian-indexer
+systemctl --user restart openclaw-gateway
 ```
 
-Environment variables for the indexer:
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `OBSIDIAN_VAULT_ROOT` | Absolute path to the Obsidian vault | *(required)* |
-| `OBSIDIAN_INDEX_LOCATION` | Path for the SQLite FTS5 database | `~/.openclaw/obsidian-index.db` |
+The plugin will appear in the gateway's plugin list and its 6 tools will be available to all agents.
 
 ---
 
