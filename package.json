@@ -1,0 +1,64 @@
+{
+  "name": "carapace-obsidian",
+  "version": "1.0.0",
+  "description": "🦞🐚📝 Obsidian plugin and indexer service for OpenClaw",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JeffSteinbok/carapace-obsidian"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "obsidian": "./dist/bin/obsidian.js"
+  },
+  "scripts": {
+    "build": "tsup && carapace-generate-cli --entry ./dist/plugin.js --out ./dist/bin",
+    "prepare": "npm run build",
+    "test": "vitest run"
+  },
+  "files": [
+    "dist",
+    "openclaw.plugin.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "openclaw",
+    "carapace",
+    "plugin",
+    "obsidian",
+    "notes",
+    "indexer"
+  ],
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.48",
+    "carapace-plugin-sdk": "^1.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7",
+    "vitest": "^2.1.8"
+  },
+  "peerDependencies": {
+    "openclaw": "^2026.4.23"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/adapter.js"
+    ]
+  },
+  "license": "MIT"
+}

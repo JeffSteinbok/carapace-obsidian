@@ -1,0 +1,4 @@
+{
+  "extends": "carapace-plugin-sdk/tsconfig.base.json",
+  "include": ["src"]
+}
