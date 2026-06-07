@@ -6,13 +6,13 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { mkdirSync, writeFileSync, rmSync, symlinkSync } from "node:fs";
+import { mkdirSync, writeFileSync, rmSync, symlinkSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import Database from "better-sqlite3";
 import { initSchema, parseNote } from "../src/lib/index.js";
 import { VaultReader } from "../src/plugin/reader.js";
-import { handleSearch, handleRead, handleRecent, handleTags, handleBacklinks, handleRelated } from "../src/plugin/handlers.js";
+import { handleSearch, handleRead, handleRecent, handleTags, handleBacklinks, handleRelated, handleWrite, handleAppend, handleDelete } from "../src/plugin/handlers.js";
 
 // ---------------------------------------------------------------------------
 // Test vault setup
@@ -144,12 +144,15 @@ describe("plugin entry", () => {
     const { createEntry } = await import("../src/plugin/entry.js");
     const entry = createEntry();
     expect(entry.contracts.tools.sort()).toEqual([
+      "vault_append",
       "vault_backlinks",
+      "vault_delete",
       "vault_read",
       "vault_recent",
       "vault_related",
       "vault_search",
       "vault_tags",
+      "vault_write",
     ]);
   });
 });
@@ -357,5 +360,93 @@ describe("handlers", () => {
   it("handleRelated finds related notes", () => {
     const result = handleRelated(reader, "Projects/Battery Monitoring.md") as { output: unknown[] };
     expect(result.output.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Write handler tests
+// ---------------------------------------------------------------------------
+
+describe("write handlers", () => {
+  const vaultConfig = { vaultRoot: VAULT_ROOT, indexLocation: INDEX_PATH };
+
+  it("handleWrite creates a new note", () => {
+    const result = handleWrite(vaultConfig, "Notes/NewNote.md", "# New Note\n\nHello world.", true) as { output: Record<string, unknown> };
+    expect(result.output.action).toBe("created");
+    expect(result.output.path).toBe("Notes/NewNote.md");
+    expect((result.output.size as number)).toBeGreaterThan(0);
+  });
+
+  it("handleWrite overwrites an existing note", () => {
+    const result = handleWrite(vaultConfig, "Notes/NewNote.md", "# Updated\n\nChanged.", false) as { output: Record<string, unknown> };
+    expect(result.output.action).toBe("updated");
+  });
+
+  it("handleWrite creates parent directories when createDirs=true", () => {
+    const result = handleWrite(vaultConfig, "Deep/Nested/Dir/Note.md", "# Deep Note", true) as { output: Record<string, unknown> };
+    expect(result.output.action).toBe("created");
+    expect(result.output.path).toBe("Deep/Nested/Dir/Note.md");
+  });
+
+  it("handleWrite rejects missing dir when createDirs=false", () => {
+    const result = handleWrite(vaultConfig, "NoSuchDir/Note.md", "content", false) as { error: string };
+    expect(result.error).toContain("Parent directory does not exist");
+  });
+
+  it("handleWrite rejects path traversal", () => {
+    const result = handleWrite(vaultConfig, "../../etc/shadow", "evil", false) as { error: string };
+    expect(result.error).toContain("Access denied");
+  });
+
+  it("handleWrite rejects empty path", () => {
+    const result = handleWrite(vaultConfig, "", "content", false) as { error: string };
+    expect(result.error).toContain("empty");
+  });
+
+  it("handleAppend appends to existing note", () => {
+    const before = readFileSync(join(VAULT_ROOT, "Notes/NewNote.md"), "utf-8");
+    const result = handleAppend(vaultConfig, "Notes/NewNote.md", "\n## Appended Section") as { output: Record<string, unknown> };
+    expect(result.output.action).toBe("appended");
+    const after = readFileSync(join(VAULT_ROOT, "Notes/NewNote.md"), "utf-8");
+    expect(after.length).toBeGreaterThan(before.length);
+    expect(after).toContain("Appended Section");
+  });
+
+  it("handleAppend returns error for missing note", () => {
+    const result = handleAppend(vaultConfig, "DoesNotExist.md", "text") as { error: string };
+    expect(result.error).toContain("not found");
+  });
+
+  it("handleAppend rejects empty path", () => {
+    const result = handleAppend(vaultConfig, "", "text") as { error: string };
+    expect(result.error).toContain("empty");
+  });
+
+  it("handleAppend rejects path traversal", () => {
+    const result = handleAppend(vaultConfig, "../../etc/passwd", "evil") as { error: string };
+    expect(result.error).toContain("Access denied");
+  });
+
+  it("handleDelete deletes a note", () => {
+    // Create a temp note to delete
+    handleWrite(vaultConfig, "Temp/ToDelete.md", "# Delete me", true);
+    const result = handleDelete(vaultConfig, "Temp/ToDelete.md") as { output: Record<string, unknown> };
+    expect(result.output.action).toBe("deleted");
+    expect(result.output.path).toBe("Temp/ToDelete.md");
+  });
+
+  it("handleDelete returns error for missing note", () => {
+    const result = handleDelete(vaultConfig, "NonExistent.md") as { error: string };
+    expect(result.error).toContain("not found");
+  });
+
+  it("handleDelete rejects empty path", () => {
+    const result = handleDelete(vaultConfig, "") as { error: string };
+    expect(result.error).toContain("empty");
+  });
+
+  it("handleDelete rejects path traversal", () => {
+    const result = handleDelete(vaultConfig, "../../etc/passwd") as { error: string };
+    expect(result.error).toContain("Access denied");
   });
 });

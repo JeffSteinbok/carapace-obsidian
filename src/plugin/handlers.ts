@@ -5,8 +5,8 @@
  * No knowledge of the plugin framework.
  */
 
-import { readFileSync, statSync } from "node:fs";
-import { relative } from "node:path";
+import { readFileSync, writeFileSync, statSync, existsSync, mkdirSync, unlinkSync } from "node:fs";
+import { dirname, relative } from "node:path";
 import { resolveSafePath, parseNote, type VaultConfig } from "../lib/index.js";
 import type { VaultReader } from "./reader.js";
 
@@ -111,6 +111,127 @@ export function handleBacklinks(
     return { error: "Note path must not be empty" };
   }
   return { output: reader.getBacklinks(notePath) };
+}
+
+// ---------------------------------------------------------------------------
+// Write handlers
+// ---------------------------------------------------------------------------
+
+export function handleWrite(
+  config: VaultConfig,
+  notePath: string,
+  content: string,
+  createDirs: boolean,
+): unknown {
+  if (!notePath.trim()) {
+    return { error: "Note path must not be empty" };
+  }
+
+  try {
+    const safePath = resolveSafePath(config.vaultRoot, notePath);
+    const dir = dirname(safePath);
+
+    if (!existsSync(dir)) {
+      if (!createDirs) {
+        return { error: `Parent directory does not exist: ${relative(config.vaultRoot, dir)}. Pass createDirs=true to create it.` };
+      }
+      mkdirSync(dir, { recursive: true });
+    }
+
+    const existed = existsSync(safePath);
+    writeFileSync(safePath, content, "utf-8");
+    const stat = statSync(safePath);
+    const relPath = relative(config.vaultRoot, safePath);
+
+    return {
+      output: {
+        path: relPath,
+        action: existed ? "updated" : "created",
+        size: stat.size,
+        modified: new Date(stat.mtimeMs).toISOString(),
+      },
+    };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes("escapes vault root") || msg.includes("Invalid path")) {
+      return { error: `Access denied: ${msg}` };
+    }
+    return { error: msg };
+  }
+}
+
+export function handleAppend(
+  config: VaultConfig,
+  notePath: string,
+  content: string,
+): unknown {
+  if (!notePath.trim()) {
+    return { error: "Note path must not be empty" };
+  }
+
+  try {
+    const safePath = resolveSafePath(config.vaultRoot, notePath);
+
+    if (!existsSync(safePath)) {
+      return { error: `Note not found: ${notePath}` };
+    }
+
+    const existing = readFileSync(safePath, "utf-8");
+    // Ensure we add a newline separator if the file doesn't end with one
+    const separator = existing.length > 0 && !existing.endsWith("\n") ? "\n" : "";
+    writeFileSync(safePath, existing + separator + content, "utf-8");
+
+    const stat = statSync(safePath);
+    const relPath = relative(config.vaultRoot, safePath);
+
+    return {
+      output: {
+        path: relPath,
+        action: "appended",
+        size: stat.size,
+        modified: new Date(stat.mtimeMs).toISOString(),
+      },
+    };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes("escapes vault root") || msg.includes("Invalid path")) {
+      return { error: `Access denied: ${msg}` };
+    }
+    return { error: msg };
+  }
+}
+
+export function handleDelete(
+  config: VaultConfig,
+  notePath: string,
+): unknown {
+  if (!notePath.trim()) {
+    return { error: "Note path must not be empty" };
+  }
+
+  try {
+    const safePath = resolveSafePath(config.vaultRoot, notePath);
+
+    if (!existsSync(safePath)) {
+      return { error: `Note not found: ${notePath}` };
+    }
+
+    const relPath = relative(config.vaultRoot, safePath);
+    unlinkSync(safePath);
+
+    return {
+      output: {
+        path: relPath,
+        action: "deleted",
+      },
+    };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes("escapes vault root") || msg.includes("Invalid path")) {
+      return { error: `Access denied: ${msg}` };
+    }
+    return { error: msg };
+  }
 }
 
 export function handleRelated(

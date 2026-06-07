@@ -22,6 +22,9 @@ import {
   handleTags,
   handleBacklinks,
   handleRelated,
+  handleWrite,
+  handleAppend,
+  handleDelete,
 } from "./handlers.js";
 
 // ---------------------------------------------------------------------------
@@ -180,6 +183,78 @@ export const createEntry = definePlugin({
         const reader = getReader(config);
         const notePath = (params.path ?? "").trim();
         return handleRelated(reader, notePath);
+      },
+    }),
+
+    tool({
+      name: "vault_write",
+      label: "Vault Write",
+      description:
+        "Create or overwrite a note in the Obsidian vault. " +
+        "Provide a vault-relative path (e.g. 'Projects/MyNote.md') and the full Markdown content. " +
+        "Creates the file if it does not exist, or replaces it entirely if it does. " +
+        "The indexer will automatically pick up the change.",
+      parameters: Type.Object({
+        path: Type.String({
+          description: "Vault-relative path to the note (e.g. 'Projects/MyNote.md')",
+        }),
+        content: Type.String({
+          description: "Full Markdown content to write",
+        }),
+        createDirs: Type.Optional(
+          Type.Boolean({
+            description: "Create missing parent directories (default: true)",
+            default: true,
+          }),
+        ),
+      }),
+      async execute(params, config) {
+        const resolved = resolveConfig(config);
+        const notePath = (params.path ?? "").trim();
+        const content = params.content ?? "";
+        const createDirs = params.createDirs !== false;
+        return handleWrite(resolved, notePath, content, createDirs);
+      },
+    }),
+
+    tool({
+      name: "vault_append",
+      label: "Vault Append",
+      description:
+        "Append text to an existing note in the Obsidian vault. " +
+        "The note must already exist. A newline is inserted automatically if the file doesn't end with one.",
+      parameters: Type.Object({
+        path: Type.String({
+          description: "Vault-relative path to the note (e.g. 'Journal/2024-01-15.md')",
+        }),
+        content: Type.String({
+          description: "Markdown text to append",
+        }),
+      }),
+      async execute(params, config) {
+        const resolved = resolveConfig(config);
+        const notePath = (params.path ?? "").trim();
+        const content = params.content ?? "";
+        return handleAppend(resolved, notePath, content);
+      },
+    }),
+
+    tool({
+      name: "vault_delete",
+      label: "Vault Delete",
+      description:
+        "Permanently delete a note from the Obsidian vault. " +
+        "This is irreversible — the file is removed from disk. " +
+        "The indexer will automatically remove it from the search index.",
+      parameters: Type.Object({
+        path: Type.String({
+          description: "Vault-relative path to the note to delete (e.g. 'Drafts/OldNote.md')",
+        }),
+      }),
+      async execute(params, config) {
+        const resolved = resolveConfig(config);
+        const notePath = (params.path ?? "").trim();
+        return handleDelete(resolved, notePath);
       },
     }),
   ],
