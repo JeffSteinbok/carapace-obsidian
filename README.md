@@ -11,11 +11,11 @@ Built with [carapace-plugin-sdk](https://github.com/JeffSteinbok/carapace-plugin
 ## Architecture
 
 ```
-┌────────────────────┐       ┌──────────────────┐       ┌────────────────┐
-│  Obsidian Vault    │       │  Indexer Service  │       │  Plugin (r/w)  │
-│  (markdown files)  │──────▶│  (chokidar watch) │──────▶│  (VaultReader) │
+┌────────────────────┐        ┌───────────────────┐       ┌────────────────┐
+│  Obsidian Vault    │        │  Indexer Service  │       │  Plugin (r/w)  │
+│  (markdown files)  │──────> │  (chokidar watch) │──────>│  (VaultReader) │
 │                    │ watch  │  SQLite FTS5 DB   │ read  │  9 tools       │
-└────────────────────┘       └──────────────────┘       └────────────────┘
+└────────────────────┘        └───────────────────┘       └────────────────┘
 ```
 
 - **Indexer service** — long-running systemd service that watches the vault directory, parses markdown (frontmatter, tags, wikilinks), and maintains a SQLite FTS5 index in WAL mode.
