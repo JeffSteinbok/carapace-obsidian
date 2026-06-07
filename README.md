@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/JeffSteinbok/carapace-obsidian/actions/workflows/ci.yml/badge.svg)](https://github.com/JeffSteinbok/carapace-obsidian/actions/workflows/ci.yml)
 
-Read-only Obsidian vault integration for [OpenClaw](https://github.com/JeffSteinbok/openclaw) — full-text search, note reading, and graph exploration powered by SQLite FTS5.
+Obsidian vault integration for [OpenClaw](https://github.com/JeffSteinbok/openclaw) — full-text search, note reading, graph exploration, and note management powered by SQLite FTS5.
 
 Built with [carapace-plugin-sdk](https://github.com/JeffSteinbok/carapace-plugin-sdk). Pairs with [obsidian-onedrive](https://github.com/JeffSteinbok/obsidian-onedrive) for vault sync.
 
@@ -12,14 +12,14 @@ Built with [carapace-plugin-sdk](https://github.com/JeffSteinbok/carapace-plugin
 
 ```
 ┌────────────────────┐       ┌──────────────────┐       ┌────────────────┐
-│  Obsidian Vault    │       │  Indexer Service  │       │  Plugin (r/o)  │
+│  Obsidian Vault    │       │  Indexer Service  │       │  Plugin (r/w)  │
 │  (markdown files)  │──────▶│  (chokidar watch) │──────▶│  (VaultReader) │
-│                    │ watch  │  SQLite FTS5 DB   │ read  │  6 tools       │
+│                    │ watch  │  SQLite FTS5 DB   │ read  │  9 tools       │
 └────────────────────┘       └──────────────────┘       └────────────────┘
 ```
 
 - **Indexer service** — long-running systemd service that watches the vault directory, parses markdown (frontmatter, tags, wikilinks), and maintains a SQLite FTS5 index in WAL mode.
-- **Plugin** — read-only OpenClaw plugin that queries the index. Opens the DB with `readonly: true` so it never conflicts with the indexer.
+- **Plugin** — OpenClaw plugin that queries the index for reads and writes directly to the vault for mutations. Reads open the DB with `readonly: true` so they never conflict with the indexer; writes go to the filesystem and the indexer picks up changes automatically.
 
 ---
 
@@ -33,6 +33,9 @@ Built with [carapace-plugin-sdk](https://github.com/JeffSteinbok/carapace-plugin
 | `vault_tags` | List all tags used across the vault with note counts. |
 | `vault_backlinks` | Find notes that link to a given note via `[[wikilinks]]`. |
 | `vault_related` | Find related notes via shared wikilinks and tags, ranked by relevance. |
+| `vault_write` | Create or overwrite a note. Provide a vault-relative path and full Markdown content. Creates parent directories by default. The indexer picks up the change automatically. |
+| `vault_append` | Append text to an existing note. A newline is inserted automatically if the file doesn't end with one. |
+| `vault_delete` | Permanently delete a note from the vault. Irreversible — the indexer removes it from the search index automatically. |
 
 ---
 
@@ -114,7 +117,7 @@ Then restart the gateway:
 systemctl --user restart openclaw-gateway
 ```
 
-The plugin will appear in the gateway's plugin list and its 6 tools will be available to all agents.
+The plugin will appear in the gateway's plugin list and its 9 tools will be available to all agents.
 
 ---
 
@@ -136,6 +139,9 @@ export OBSIDIAN_VAULT_INDEX_LOCATION="~/.openclaw/obsidian-index.db"
 ./dist/bin/obsidian-vault.js vault-read "Projects/My Note.md"
 ./dist/bin/obsidian-vault.js vault-recent
 ./dist/bin/obsidian-vault.js vault-tags
+./dist/bin/obsidian-vault.js vault-write "Notes/New.md" "# Hello"
+./dist/bin/obsidian-vault.js vault-append "Journal/2024-01-15.md" "- Added a note"
+./dist/bin/obsidian-vault.js vault-delete "Drafts/OldNote.md"
 ```
 
 ---
@@ -145,7 +151,7 @@ export OBSIDIAN_VAULT_INDEX_LOCATION="~/.openclaw/obsidian-index.db"
 ```bash
 npm install
 npm run build
-npm test          # 100 tests across 5 suites
+npm test          # 114 tests across 5 suites
 ```
 
 ### Project structure
