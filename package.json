@@ -42,7 +42,7 @@
   ],
   "dependencies": {
     "@sinclair/typebox": "^0.34.48",
-    "better-sqlite3": "^11.9.1",
+    "better-sqlite3": "^12.11.1",
     "carapace-plugin-sdk": "^2.0.1",
     "chokidar": "^4.0.3",
     "gray-matter": "^4.0.3"
