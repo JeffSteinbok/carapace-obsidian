@@ -22,7 +22,8 @@
     "build": "tsup && carapace-generate-cli --entry ./dist/plugin.js --out ./dist/bin",
     "prepare": "npm run build",
     "start:indexer": "node dist/service/index.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "deploy": "node scripts/deploy.mjs"
   },
   "files": [
     "dist",
