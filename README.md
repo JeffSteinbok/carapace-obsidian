@@ -119,6 +119,32 @@ systemctl --user restart openclaw-gateway
 
 The plugin will appear in the gateway's plugin list and its 9 tools will be available to all agents.
 
+### Deploying a local build to OpenClaw
+
+Install your local build as a packed, managed plugin instead of pointing
+`plugins.load.paths` at this checkout (which drags the dev `node_modules`
+into OpenClaw's update snapshots):
+
+```bash
+npm run deploy              # build → pack to out/obsidian-vault.tgz → print install command
+npm run deploy -- --install # same, then run the install command
+```
+
+The install command is `openclaw plugins install npm-pack:<repo>/out/obsidian-vault.tgz --force`.
+OpenClaw installs the pack into its managed plugin root along with the
+package's production `dependencies`. What goes in the pack is controlled by
+`"files"` in `package.json`; the deploy script lists the packed files and
+refuses to deploy if `src/`, `tests/` or `node_modules/` end up in it.
+
+> **Known limitation:** the plugin reads the index with `better-sqlite3`, a
+> native addon. OpenClaw installs managed plugin dependencies with
+> `--ignore-scripts`, so the addon's native binding is not built and index
+> queries fail. Until the reader moves off native modules, keep loading this
+> plugin from the checkout via `plugins.load.paths`.
+
+The indexer (`dist/service/index.js`) is a separate systemd service, not part
+of the plugin; it keeps running from the checkout as described in step 3.
+
 ---
 
 ## CLI Usage
