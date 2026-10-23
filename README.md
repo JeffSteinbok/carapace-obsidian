@@ -58,9 +58,11 @@ If your Obsidian vault lives on OneDrive, use [obsidian-onedrive](https://github
 # The indexer will watch this directory for changes
 ```
 
-### 3. Indexer service (systemd)
+### 3. Indexer service
 
 The indexer is a long-running service that watches your vault directory and maintains the FTS5 search index. It must be running for the plugin to return results.
+
+**Linux (systemd --user):**
 
 ```bash
 # Copy the service file
@@ -79,6 +81,16 @@ systemctl --user enable --now obsidian-indexer
 # Verify it's running
 systemctl --user status obsidian-indexer
 journalctl --user -u obsidian-indexer -f
+```
+
+**macOS (launchd):** create `~/Library/LaunchAgents/com.openclaw.obsidian-indexer.plist` with `ProgramArguments` set to `/path/to/node /path/to/carapace-obsidian/dist/service/index.js`, the two variables below under `EnvironmentVariables`, `RunAtLoad` and `KeepAlive` set to true, and `StandardOutPath`/`StandardErrorPath` pointing at a log file (e.g. `~/Library/Logs/openclaw-obsidian-indexer.log`). Then:
+
+```bash
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.openclaw.obsidian-indexer.plist
+
+# Verify it's running
+launchctl print gui/$(id -u)/com.openclaw.obsidian-indexer
+tail -f ~/Library/Logs/openclaw-obsidian-indexer.log
 ```
 
 Environment variables:
@@ -114,7 +126,11 @@ Add the plugin to your `openclaw.json`:
 Then restart the gateway:
 
 ```bash
+# Linux (systemd --user)
 systemctl --user restart openclaw-gateway
+
+# macOS (launchd)
+launchctl kickstart -k gui/$(id -u)/ai.openclaw.gateway
 ```
 
 The plugin will appear in the gateway's plugin list and its 9 tools will be available to all agents.
